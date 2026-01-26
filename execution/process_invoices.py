@@ -2,8 +2,10 @@ import os
 import csv
 import json
 import glob
+import time
 from dotenv import load_dotenv
 import google.generativeai as genai
+from tqdm import tqdm
 
 # Load environment variables
 load_dotenv()
@@ -18,10 +20,7 @@ genai.configure(api_key=api_key)
 # Configuration
 INPUT_DIR = "invoice_imgs"
 OUTPUT_FILE = "invoices.csv"
-
-import time
-
-# ...
+FIELDNAMES = ['date', 'company', 'amount', 'currency', 'filename']
 
 def extract_invoice_data(image_path):
     """
@@ -29,9 +28,6 @@ def extract_invoice_data(image_path):
     """
     try:
         model = genai.GenerativeModel('gemini-flash-latest')
-        
-        # Add delay to respect rate limits
-        time.sleep(2)
         
         with open(image_path, "rb") as f:
             image_data = f.read()
@@ -62,7 +58,7 @@ def extract_invoice_data(image_path):
             
         return json.loads(text)
     except Exception as e:
-        print(f"Error processing {image_path}: {e}")
+        # Log error to a file potentially, or just print
         return None
 
 def main():
@@ -70,31 +66,54 @@ def main():
         print(f"Directory {INPUT_DIR} does not exist.")
         return
 
-    images = glob.glob(os.path.join(INPUT_DIR, "*.jpg"))
-    if not images:
+    all_images = glob.glob(os.path.join(INPUT_DIR, "*.jpg"))
+    if not all_images:
         print("No invoice images found.")
         return
 
-    print(f"Found {len(images)} images. Processing with Gemini...")
-    
-    results = []
-    for img_path in images:
-        print(f"Processing {img_path}...")
-        data = extract_invoice_data(img_path)
-        if data:
-            data['filename'] = os.path.basename(img_path)
-            results.append(data)
+    processed_files = set()
+    write_header = True
 
-    if results:
-        fieldnames = ['date', 'company', 'amount', 'currency', 'filename']
-        with open(OUTPUT_FILE, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, 'r', newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if 'filename' in row:
+                        processed_files.add(row['filename'])
+            write_header = False
+            print(f"Found {len(processed_files)} already processed invoices.")
+        except Exception as e:
+            print(f"Error reading existing CSV: {e}")
+
+    images_to_process = [img for img in all_images if os.path.basename(img) not in processed_files]
+
+    if not images_to_process:
+        print("All images have been processed.")
+        return
+
+    print(f"Processing {len(images_to_process)} new images...")
+
+    # Open file in append mode
+    with open(OUTPUT_FILE, 'a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=FIELDNAMES)
+        
+        if write_header:
             writer.writeheader()
-            for row in results:
-                writer.writerow(row)
-        print(f"Successfully saved data to {OUTPUT_FILE}")
-    else:
-        print("No data extracted.")
+
+        # Use tqdm for progress bar
+        for img_path in tqdm(images_to_process, desc="Parsing Invoices"):
+            data = extract_invoice_data(img_path)
+            
+            if data:
+                data['filename'] = os.path.basename(img_path)
+                writer.writerow(data)
+                csvfile.flush() # Ensure it's written immediately
+            
+            # Rate limiting
+            time.sleep(5)
+
+    print(f"Processing complete. Data saved to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
