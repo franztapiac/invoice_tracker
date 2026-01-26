@@ -39,6 +39,10 @@ Before writing a script, check `execution/` per your directive. Only create new 
 **4. Update directives as you learn**
 Directives are living documents. When you discover API constraints, better approaches, common errors, or timing expectations—update the directive. But don't create or overwrite directives without asking unless explicitly told to. Directives are your instruction set and must be preserved (and improved upon over time, not extemporaneously used and then discarded).
 
+
+**5. Maintain Documentation**
+Maintain a `README.md` for new workflows to describe what they do. Update it after every workflow update to ensure it remains accurate.
+
 ## Self-annealing loop
 
 Errors are learning opportunities. When something breaks:
@@ -51,7 +55,7 @@ Errors are learning opportunities. When something breaks:
 ## File Organization
 
 **Deliverables vs Intermediates:**
-- **Deliverables**: Google Sheets, Google Slides, or other cloud-based outputs that the user can access
+- **Deliverables**: Google Sheets, Google Slides, or other cloud-based outputs. **Local files (CSVs, Reports) are also acceptable deliverables.**
 - **Intermediates**: Temporary files needed during processing
 
 **Directory structure:**
@@ -61,7 +65,7 @@ Errors are learning opportunities. When something breaks:
 - `.env` - Environment variables and API keys
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)
 
-**Key principle:** Local files are only for processing. Deliverables live in cloud services (Google Sheets, Slides, etc.) where the user can access them. Everything in `.tmp/` can be deleted and regenerated.
+**Key principle:** Local files are only for processing unless they are final deliverables. Intermediates in `.tmp/` can be deleted and regenerated.
 
 ## Summary
 
