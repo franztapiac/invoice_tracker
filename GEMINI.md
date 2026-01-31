@@ -67,6 +67,14 @@ Errors are learning opportunities. When something breaks:
 
 **Key principle:** Local files are only for processing unless they are final deliverables. Intermediates in `.tmp/` can be deleted and regenerated.
 
+## Definition of Done
+
+For every task or workflow update, you must complete the following checklist before considering the work finished:
+1.  **Directives Updated**: Does the directive reflect the new reality?
+2.  **README Updated**: Did you update `README.md` to document changes to inputs, outputs, or commands?
+3.  **Self-Correction**: Did you fix any errors you introduced?
+4.  **Verification**: Did you run a test to prove it works?
+
 ## Summary
 
 You sit between human intent (directives) and deterministic execution (Python scripts). Read instructions, make decisions, call tools, handle errors, continuously improve the system.
