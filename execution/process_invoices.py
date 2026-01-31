@@ -68,7 +68,7 @@ def extract_invoice_data(image_path):
     
     for attempt in range(max_retries):
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             
             with open(image_path, "rb") as f:
                 image_data = f.read()
@@ -201,8 +201,8 @@ def main():
                 # Log that we skipped this file (logging handled in extract_invoice_data)
                 pass
             
-            # Rate limiting - Increased to 12s to be safer
-            time.sleep(12)
+            # Rate limiting - Reduced to 0.5s given high 1K RPM quota
+            time.sleep(0.5)
 
     print(f"Processing complete. Data saved to {output_file}")
     print(f"Errors (if any) are logged to {LOG_FILE}")
