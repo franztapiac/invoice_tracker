@@ -66,12 +66,12 @@ def extract_invoice_data(image_path):
         1. **Company**: Extract the common trading name of the company. 
            - Remove legal suffixes like 'Inc', 'N.V.', 'B.V.', 'Ltd', 'S.A.', etc. (e.g., 'Island Water World Inc N.V' -> 'Island Water World').
            - If the logo/name is covered (e.g. by a receipt), look elsewhere in the document (headers, footers) for the company name.
-        2. **Invoice Number**: Extract the invoice number (sometimes called 'slip #', 'bill #', etc.).
+        2. **Invoice Number**: Extract the invoice number (sometimes called 'slip #', 'bill #', 'sale no.', etc.).
         3. **Date**: Extract the date in YYYY-MM-DD format.
         4. **Total Amount & Currency**:
            - Look for the TOTAL amount.
-           - **CRITICAL**: If the amount is available in USD and another currency (e.g., NAF, ANG), YOU MUST extraction the USD amount and set currency to 'USD'.
-           - Only use a different currency if USD is strictly NOT present or calculable.
+           - **CRITICAL**: If the amount is available in USD and another currency (e.g., NAF, ANG, XCG, EUR), YOU MUST extract the USD amount and set currency to 'USD'.
+           - Only use a different currency if USD is strictly NOT present. Do not calculate the USD amount.
            - Look throughout the whole image for currency codes/symbols if not immediately next to the total.
            
         Return ONLY the JSON object with these keys:
