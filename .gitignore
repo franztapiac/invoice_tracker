@@ -6,4 +6,5 @@ token.json
 __pycache__/
 *.pyc
 invoice_imgs/
+exports/
 invoices.csv
