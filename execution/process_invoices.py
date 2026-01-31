@@ -4,6 +4,7 @@ import json
 import glob
 import time
 import re
+import logging
 from datetime import datetime
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -23,6 +24,14 @@ genai.configure(api_key=api_key)
 TESTS_FILE = "tests.txt"
 BASE_INPUT_DIR = "invoice_imgs"
 FIELDNAMES = ['date', 'company', 'invoice_number', 'amount', 'currency', 'filename']
+LOG_FILE = "processing_errors.log"
+
+# Setup logging
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 def get_latest_test_id():
     """
@@ -52,54 +61,71 @@ def get_latest_test_id():
 def extract_invoice_data(image_path):
     """
     Uploads an image to Gemini and extracts invoice details.
+    Includes retry logic and error logging.
     """
-    try:
-        model = genai.GenerativeModel('gemini-flash-latest')
-        
-        with open(image_path, "rb") as f:
-            image_data = f.read()
+    max_retries = 3
+    base_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
-        prompt = """
-        Analyze this invoice image and extract the following details in JSON format.
-        
-        Extraction Rules:
-        1. **Company**: Extract the common trading name of the company. 
-           - Remove legal suffixes like 'Inc', 'N.V.', 'B.V.', 'Ltd', 'S.A.', etc. (e.g., 'Island Water World Inc N.V' -> 'Island Water World').
-           - If the logo/name is covered (e.g. by a receipt), look elsewhere in the document (headers, footers) for the company name.
-        2. **Invoice Number**: Extract the invoice number (sometimes called 'slip #', 'bill #', 'sale no.', etc.).
-        3. **Date**: Extract the date in YYYY-MM-DD format.
-        4. **Total Amount & Currency**:
-           - Look for the TOTAL amount.
-           - **CRITICAL**: If the amount is available in USD and another currency (e.g., NAF, ANG, XCG, EUR), YOU MUST extract the USD amount and set currency to 'USD'.
-           - Only use a different currency if USD is strictly NOT present. Do not calculate the USD amount.
-           - Look throughout the whole image for currency codes/symbols if not immediately next to the total.
-           
-        Return ONLY the JSON object with these keys:
-        - date (YYYY-MM-DD or null)
-        - company (string or null)
-        - invoice_number (string or null)
-        - amount (number or null)
-        - currency (string or null)
-        """
-        
-        response = model.generate_content([
-            {'mime_type': 'image/jpeg', 'data': image_data},
-            prompt
-        ])
-        
-        # Parse JSON from response
-        text = response.text
-        # Clean up code blocks if present
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
+            with open(image_path, "rb") as f:
+                image_data = f.read()
+                
+            prompt = """
+            Analyze this invoice image and extract the following details in JSON format.
             
-        return json.loads(text)
-    except Exception as e:
-        # Log error to a file potentially, or just print
-        return None
+            Extraction Rules:
+            1. **Company**: Extract the common trading name of the company. 
+               - Remove legal suffixes like 'Inc', 'N.V.', 'B.V.', 'Ltd', 'S.A.', etc. (e.g., 'Island Water World Inc N.V' -> 'Island Water World').
+               - If the logo/name is covered (e.g. by a receipt), look elsewhere in the document (headers, footers) for the company name.
+            2. **Invoice Number**: Extract the invoice number (sometimes called 'slip #', 'bill #', 'sale no.', etc.).
+            3. **Date**: Extract the date in YYYY-MM-DD format.
+            4. **Total Amount & Currency**:
+               - Look for the TOTAL amount.
+               - **CRITICAL**: If the amount is available in USD and another currency (e.g., NAF, ANG, XCG, EUR), YOU MUST extract the USD amount and set currency to 'USD'.
+               - Only use a different currency if USD is strictly NOT present. Do not calculate the USD amount.
+               - Look throughout the whole image for currency codes/symbols if not immediately next to the total.
+               
+            Return ONLY the JSON object with these keys:
+            - date (YYYY-MM-DD or null)
+            - company (string or null)
+            - invoice_number (string or null)
+            - amount (number or null)
+            - currency (string or null)
+            """
+            
+            response = model.generate_content([
+                {'mime_type': 'image/jpeg', 'data': image_data},
+                prompt
+            ])
+            
+            # Parse JSON from response
+            text = response.text
+            # Clean up code blocks if present
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+            
+            data = json.loads(text)
+            
+            # Basic validation: check if it's a dict
+            if not isinstance(data, dict):
+                raise ValueError("Response is not a JSON object")
+
+            return data
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                sleep_time = base_delay * (2 ** attempt)
+                time.sleep(sleep_time)
+                continue
+            else:
+                logging.error(f"Failed to process {os.path.basename(image_path)}: {str(e)}")
+                return None
 
 def main():
     test_id = get_latest_test_id()
@@ -135,12 +161,6 @@ def main():
 
     processed_files = set()
     write_header = True
-
-    # Note: For this new requirement, we are generating a NEW file every time, 
-    # so we might NOT want to read processed files from the *new* file (since it doesn't exist yet).
-    # But if we want to support resuming a run for the SAME csv name, we would check existence.
-    # The requirement says "generate a new CSV file... named differently, according to date and time".
-    # This implies a fresh start for each run unless the minute hasn't changed.
     
     if os.path.exists(output_file):
         try:
@@ -177,11 +197,15 @@ def main():
                 data['filename'] = os.path.basename(img_path)
                 writer.writerow(data)
                 csvfile.flush() # Ensure it's written immediately
+            else:
+                # Log that we skipped this file (logging handled in extract_invoice_data)
+                pass
             
-            # Rate limiting
-            time.sleep(5)
+            # Rate limiting - Increased to 12s to be safer
+            time.sleep(12)
 
     print(f"Processing complete. Data saved to {output_file}")
+    print(f"Errors (if any) are logged to {LOG_FILE}")
 
 if __name__ == "__main__":
     main()

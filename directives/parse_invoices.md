@@ -16,6 +16,7 @@ python execution/process_invoices.py
 
 ## Outputs
 - `exports/invoices_test{ID}_{timestamp}.csv`: CSV file with columns: `date`, `company`, `invoice_number`, `amount`, `currency`, `filename`.
+- `processing_errors.log`: Logs failed extractions with error details.
 
 ## Logic Rules
 - **Invoice Number**: Extracted if available.
@@ -26,3 +27,4 @@ python execution/process_invoices.py
 - If `tests.txt` is missing or has no "Test XX" block, the script exits.
 - If the specific test directory (e.g., `invoice_imgs/test02/`) is empty, exit gracefully.
 - The script generates a new file for each run (based on minute-resolution timestamp).
+- **Retries**: API calls are retried up to 3 times with exponential backoff. Failed images are logged to `processing_errors.log`.
