@@ -8,3 +8,5 @@ __pycache__/
 invoice_imgs/
 exports/
 processing_errors.log
+prompts.txt
+verification_errors.log
