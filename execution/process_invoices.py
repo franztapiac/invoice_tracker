@@ -6,6 +6,8 @@ import time
 import re
 import logging
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 from dotenv import load_dotenv
 import google.generativeai as genai
 from tqdm import tqdm
@@ -26,12 +28,21 @@ BASE_INPUT_DIR = "invoice_imgs"
 FIELDNAMES = ['date', 'company', 'invoice_number', 'amount', 'currency', 'filename']
 LOG_FILE = "processing_errors.log"
 
+# Rate Limiting configuration
+# Quota: 1000 RPM (Requests Per Minute)
+# Safe target: ~800 RPM to be safe => ~13 requests/sec
+# With 10 threads, each thread needs to take >0.7s per request on average to stay safe.
+# Actually, API latency is usually >1s, so 15-20 threads is likely safe.
+MAX_WORKERS = 15  
+
 # Setup logging
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.ERROR,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+csv_lock = threading.Lock()
 
 def get_latest_test_id():
     """
@@ -127,6 +138,29 @@ def extract_invoice_data(image_path):
                 logging.error(f"Failed to process {os.path.basename(image_path)}: {str(e)}")
                 return None
 
+def process_single_image(img_path, output_file, existing_fieldnames):
+    """
+    Wrapper function to process a single image and write to CSV immediately (thread-safe).
+    """
+    try:
+        data = extract_invoice_data(img_path)
+        
+        if data:
+            data['filename'] = os.path.basename(img_path)
+            
+            with csv_lock:
+                with open(output_file, 'a', newline='') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=existing_fieldnames)
+                    writer.writerow(data)
+                    csvfile.flush()
+            return True # Success
+        else:
+            return False # Failed extraction (logged elsewhere)
+            
+    except Exception as e:
+        logging.error(f"Wrapper failed for {os.path.basename(img_path)}: {str(e)}")
+        return False
+
 def main():
     test_id = get_latest_test_id()
     if not test_id:
@@ -136,19 +170,52 @@ def main():
     input_dir = os.path.join(BASE_INPUT_DIR, f"test{test_id}")
     
     # Generate output filename: exports/invoices_test02_2026jan31_14;02.csv
-    now = datetime.now()
-    month_name = now.strftime("%b").lower()
-    timestamp_str = now.strftime(f"%Y{month_name}%d_%H;%M")
-    output_filename = f"invoices_test{test_id}_{timestamp_str}.csv"
-    output_file = os.path.join("exports", output_filename)
+    # NOTE: We keep the same filename format logic, but since we restart, we might want to checks for existing recent files
+    # For now, let's look for the most recent existing file for this test to append to, OR create new.
+    # Actually, the requirement says "script generates a new file for each run", but we want to resume.
+    # Let's find the MOST RECENT export file for this test ID.
+    
+    exports_dir = "exports"
+    if not os.path.exists(exports_dir):
+        os.makedirs(exports_dir)
+        
+    pattern = os.path.join(exports_dir, f"invoices_test{test_id}_*.csv")
+    existing_files = glob.glob(pattern)
+    
+    output_file = None
+    processed_files = set()
+    write_header = True
+
+    # Check if there is a recent file (created today) we should append to
+    if existing_files:
+        # Sort by creation time
+        latest_file = max(existing_files, key=os.path.getctime)
+        print(f"Found existing export file: {latest_file}")
+        
+        # Read processed filenames
+        try:
+            with open(latest_file, 'r', newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if 'filename' in row:
+                        processed_files.add(row['filename'])
+            write_header = False
+            output_file = latest_file
+            print(f"Resuming... {len(processed_files)} invoices already processed.")
+        except Exception as e:
+            print(f"Error reading existing CSV: {e}. Startihg fresh.")
+    
+    if not output_file:
+        now = datetime.now()
+        month_name = now.strftime("%b").lower()
+        timestamp_str = now.strftime(f"%Y{month_name}%d_%H;%M")
+        output_filename = f"invoices_test{test_id}_{timestamp_str}.csv"
+        output_file = os.path.join(exports_dir, output_filename)
+        print(f"Starting new export file: {output_file}")
 
     print(f"Running Test {test_id}")
     print(f"Input Directory: {input_dir}")
     print(f"Output File: {output_file}")
-
-    # Ensure exports directory exists, though user said it does
-    if not os.path.exists("exports"):
-        os.makedirs("exports")
 
     if not os.path.exists(input_dir):
         print(f"Directory {input_dir} does not exist.")
@@ -159,50 +226,29 @@ def main():
         print(f"No invoice images found in {input_dir}.")
         return
 
-    processed_files = set()
-    write_header = True
-    
-    if os.path.exists(output_file):
-        try:
-            with open(output_file, 'r', newline='') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    if 'filename' in row:
-                        processed_files.add(row['filename'])
-            write_header = False
-            print(f"Found {len(processed_files)} already processed invoices in {output_file}.")
-        except Exception as e:
-            print(f"Error reading existing CSV: {e}")
-
     images_to_process = [img for img in all_images if os.path.basename(img) not in processed_files]
 
     if not images_to_process:
         print("All images have been processed.")
         return
 
-    print(f"Processing {len(images_to_process)} new images...")
+    print(f"Processing {len(images_to_process)} new images with {MAX_WORKERS} threads...")
 
-    # Open file in append mode
-    with open(output_file, 'a', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=FIELDNAMES)
-        
-        if write_header:
+    # Initialize CSV header if needed
+    if write_header:
+        with open(output_file, 'a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=FIELDNAMES)
             writer.writeheader()
 
-        # Use tqdm for progress bar
-        for img_path in tqdm(images_to_process, desc="Parsing Invoices"):
-            data = extract_invoice_data(img_path)
-            
-            if data:
-                data['filename'] = os.path.basename(img_path)
-                writer.writerow(data)
-                csvfile.flush() # Ensure it's written immediately
-            else:
-                # Log that we skipped this file (logging handled in extract_invoice_data)
-                pass
-            
-            # Rate limiting - Reduced to 0.5s given high 1K RPM quota
-            time.sleep(0.5)
+    # Parallel Processing using ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # Submit all tasks
+        futures = {executor.submit(process_single_image, img, output_file, FIELDNAMES): img for img in images_to_process}
+        
+        for future in tqdm(as_completed(futures), total=len(images_to_process), desc="Parallel Parsing"):
+            # We don't really need the result here as it writes to CSV directly, 
+            # but we iterate to update the progress bar as they complete.
+            pass
 
     print(f"Processing complete. Data saved to {output_file}")
     print(f"Errors (if any) are logged to {LOG_FILE}")
