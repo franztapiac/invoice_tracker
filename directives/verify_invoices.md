@@ -24,4 +24,5 @@ python execution/verify_invoices.py
 ## Logic Rules
 - **Verification Prompt**: The model is shown the image and the extracted data and asked to verify strict accuracy.
 - **Focus Areas**: Explicitly checks for common OCR errors (8/B, 0/O/D) and currency consistency.
+- **Numeric Formatting**: The QC process is instructed to ignore trivial differences in trailing zeros (e.g., `381.9` == `381.90`).
 - **Concurrency**: Uses parallel processing to handle multiple invoices efficiently.

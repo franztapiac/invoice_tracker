@@ -69,6 +69,7 @@ def verify_invoice(row, image_path):
     2. Check SPECIFICALLY for:
        - Confusions between '8' and 'B', '0' and 'O' or 'D'.
        - Correctness of the Total Amount and Currency (USD vs others).
+         * **IMPORTANT**: Ignore trivial formatting differences in amounts, such as missing trailing zeros (e.g., '381.9' is IDENTICAL to '381.90'). Do NOT flag this as an error.
        - Correctness of the Date.
        - Correctness of the Company Name (ignoring suffixes like Inc, NV).
     
