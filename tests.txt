@@ -13,3 +13,11 @@ Date: 31 Jan 2026
 
 - 170 invoices
 - Aim: a bigger test that Gemini can read these invoices and generate csv
+
+##################
+Test 03
+Date: 09 Feb 2026
+##################
+
+- 366 invoices
+- Aim: To process a bigger chunk
