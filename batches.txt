@@ -23,6 +23,6 @@ Date: 09 Feb 2026
 - Aim: To process a bigger chunk
 
 ##################
-Batch 165 receipts
+Batch 153 receipts
 Date: 11 Feb 2026
 ##################
