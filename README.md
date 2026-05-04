@@ -9,7 +9,7 @@ Manual recording of receipt data into a database is time-consuming and error-pro
 A private construction client in Sint Maarten employs people to manually record receipt information into an Excel spreadsheet database. However, manual recording is time-consuming and error-prone. Given the recent advances in AI, could an AI-based workflow automate and standardise this process?
 
 
-### Methodology:
+## Methodology:
 1. Initiliased the directory structured according to `directives.md` by prompting a Large Language Model (LLM) through Google Antigravity.
 2. Prompted Gemini 3.1 Pro (High) iteratively through Google Antigravity to build the workflow.
 3. Organised receipts by date (optional, but facilitates validation).
@@ -21,7 +21,7 @@ A private construction client in Sint Maarten employs people to manually record 
 9. Validated the output in `exports/invoices_batch{ID}_{timestamp}.csv`. For data that was not extracted correctly, the original receipts were checked and the data was corrected manually. This step was streamlined by first asking the LLM to compare each row of extracted data with its corresponding image and generate data cleaning suggestions.
 
 
-## Skills
+### Skills
 
 - Prompt engineering
 - Google Antigravity
