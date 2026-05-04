@@ -1,23 +1,28 @@
 ##################
-Test 01
+Batch 01
 Date: 26 Jan 2026
 ##################
 
-- 2 invoices
+- 2 receipts
 - Aim: to test that Gemini on Antigravity can read the invoices and generate a csv file
 
 ##################
-Test 02
+Batch 02
 Date: 31 Jan 2026
 ##################
 
-- 170 invoices
+- 170 receipts
 - Aim: a bigger test that Gemini can read these invoices and generate csv
 
 ##################
-Test 03
+Batch 03
 Date: 09 Feb 2026
 ##################
 
-- 366 invoices
+- 366 receipts
 - Aim: To process a bigger chunk
+
+##################
+Batch 165 receipts
+Date: 11 Feb 2026
+##################

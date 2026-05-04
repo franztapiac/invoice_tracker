@@ -4,8 +4,8 @@
 Verify the accuracy of extracted invoice data by comparing the CSV records against the original invoice images using a generative AI model. This workflow assigns a confidence score and suggests corrections for potential errors (e.g., '8' vs 'B', currency mismatches).
 
 ## Inputs
-- `selected_exports.txt`: A list of relative paths to CSV files to verify (e.g., `exports/invoices_test02_2026jan31_17;49.csv`).
-- `invoice_imgs/`: Directory containing the source images (referenced by filenames in the CSV).
+- `selected_exports.txt`: A list of relative paths to CSV files to verify (e.g., `exports/invoices_batch02_2026jan31_17;49.csv`).
+- `receipt_imgs/`: Directory containing the source images (referenced by filenames in the CSV).
 - `.env`: Must contain `GOOGLE_API_KEY`.
 
 ## Execution

@@ -21,7 +21,7 @@ genai.configure(api_key=api_key)
 
 # Configuration
 SELECTED_EXPORTS_FILE = "selected_exports.txt"
-BASE_IMG_DIR = "invoice_imgs"
+BASE_IMG_DIR = "receipt_imgs"
 LOG_FILE = "verification_errors.log"
 MAX_WORKERS = 15 # Same concurrency as processing
 
@@ -36,10 +36,10 @@ csv_lock = threading.Lock()
 
 def find_image_path(filename):
     """
-    Searches for the image file in the subdirectories of invoice_imgs.
+    Searches for the image file in the subdirectories of receipt_imgs.
     Returns absolute path if found, None otherwise.
     """
-    # We know the structure is invoice_imgs/testXX/filename
+    # We know the structure is receipt_imgs/batchXX/filename
     # But the CSV only has filename. We can walk the directory.
     for root, dirs, files in os.walk(BASE_IMG_DIR):
         if filename in files:

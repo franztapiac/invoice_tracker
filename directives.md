@@ -52,6 +52,13 @@ Errors are learning opportunities. When something breaks:
 4. Update directive to include new flow
 5. System is now stronger
 
+## Initialization
+
+When initializing the repository or setting up the workspace for the first time, you must ensure that all required directories exist. Specifically, create the following directories if they are missing:
+- `receipt_imgs/`
+- `exports/`
+- `.tmp/`
+
 ## File Organization
 
 **Deliverables vs Intermediates:**
@@ -62,7 +69,7 @@ Errors are learning opportunities. When something breaks:
 - `.tmp/` - All intermediate files (dossiers, scraped data, temp exports). Never commit, always regenerated.
 - `execution/` - Python scripts (the deterministic tools)
 - `directives/` - SOPs in Markdown (the instruction set)
-- `invoice_imgs/` - Input files (images). Not committed.
+- `receipt_imgs/` - Input files (images). Not committed.
 - `exports/` - Final outputs (CSVs, Reports). Not committed.
 - `.env` - Environment variables and API keys
 - `credentials.json`, `token.json` - Google OAuth credentials (required files, in `.gitignore`)

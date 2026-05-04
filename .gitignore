@@ -5,7 +5,7 @@ credentials.json
 token.json
 __pycache__/
 *.pyc
-invoice_imgs/
+receipt_imgs/
 exports/
 processing_errors.log
 prompts.txt

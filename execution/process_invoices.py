@@ -23,8 +23,8 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # Configuration
-TESTS_FILE = "tests.txt"
-BASE_INPUT_DIR = "invoice_imgs"
+BATCHES_FILE = "batches.txt"
+BASE_INPUT_DIR = "receipt_imgs"
 FIELDNAMES = ['date', 'company', 'invoice_number', 'amount', 'currency', 'filename']
 LOG_FILE = "processing_errors.log"
 
@@ -44,21 +44,21 @@ logging.basicConfig(
 
 csv_lock = threading.Lock()
 
-def get_latest_test_id():
+def get_latest_batch_id():
     """
-    Parses tests.txt to find the latest Test ID.
-    Returns the test ID string (e.g., "02") or None if not found.
+    Parses batches.txt to find the latest Batch ID.
+    Returns the batch ID string (e.g., "02") or None if not found.
     """
-    if not os.path.exists(TESTS_FILE):
-        print(f"Error: {TESTS_FILE} not found.")
+    if not os.path.exists(BATCHES_FILE):
+        print(f"Error: {BATCHES_FILE} not found.")
         return None
 
     try:
-        with open(TESTS_FILE, 'r') as f:
+        with open(BATCHES_FILE, 'r') as f:
             content = f.read()
         
-        # Regex to find all "Test XX" headers
-        matches = re.findall(r'Test\s+(\d+)', content)
+        # Regex to find all "Batch XX" headers
+        matches = re.findall(r'Batch\s+(\d+)', content)
         
         if matches:
             # Return the last one found
@@ -66,7 +66,7 @@ def get_latest_test_id():
         else:
             return None
     except Exception as e:
-        print(f"Error reading {TESTS_FILE}: {e}")
+        print(f"Error reading {BATCHES_FILE}: {e}")
         return None
 
 def extract_invoice_data(image_path):
@@ -162,24 +162,24 @@ def process_single_image(img_path, output_file, existing_fieldnames):
         return False
 
 def main():
-    test_id = get_latest_test_id()
-    if not test_id:
-        print("Could not determine Test ID from tests.txt.")
+    batch_id = get_latest_batch_id()
+    if not batch_id:
+        print("Could not determine Batch ID from batches.txt.")
         return
 
-    input_dir = os.path.join(BASE_INPUT_DIR, f"test{test_id}")
+    input_dir = os.path.join(BASE_INPUT_DIR, f"batch{batch_id}")
     
-    # Generate output filename: exports/invoices_test02_2026jan31_14;02.csv
+    # Generate output filename: exports/invoices_batch02_2026jan31_14;02.csv
     # NOTE: We keep the same filename format logic, but since we restart, we might want to checks for existing recent files
-    # For now, let's look for the most recent existing file for this test to append to, OR create new.
+    # For now, let's look for the most recent existing file for this batch to append to, OR create new.
     # Actually, the requirement says "script generates a new file for each run", but we want to resume.
-    # Let's find the MOST RECENT export file for this test ID.
+    # Let's find the MOST RECENT export file for this batch ID.
     
     exports_dir = "exports"
     if not os.path.exists(exports_dir):
         os.makedirs(exports_dir)
         
-    pattern = os.path.join(exports_dir, f"invoices_test{test_id}_*.csv")
+    pattern = os.path.join(exports_dir, f"invoices_batch{batch_id}_*.csv")
     existing_files = glob.glob(pattern)
     
     output_file = None
@@ -209,16 +209,22 @@ def main():
         now = datetime.now()
         month_name = now.strftime("%b").lower()
         timestamp_str = now.strftime(f"%Y{month_name}%d_%H;%M")
-        output_filename = f"invoices_test{test_id}_{timestamp_str}.csv"
+        output_filename = f"invoices_batch{batch_id}_{timestamp_str}.csv"
         output_file = os.path.join(exports_dir, output_filename)
         print(f"Starting new export file: {output_file}")
 
-    print(f"Running Test {test_id}")
+    print(f"Running Batch {batch_id}")
     print(f"Input Directory: {input_dir}")
     print(f"Output File: {output_file}")
 
+    if not os.path.exists(BASE_INPUT_DIR):
+        os.makedirs(BASE_INPUT_DIR)
+        print(f"Created base input directory: {BASE_INPUT_DIR}")
+
     if not os.path.exists(input_dir):
-        print(f"Directory {input_dir} does not exist.")
+        print(f"Directory {input_dir} does not exist. Creating it now.")
+        os.makedirs(input_dir)
+        print(f"Please place your invoice images in {input_dir} and run the script again.")
         return
 
     all_images = glob.glob(os.path.join(input_dir, "*.jpg"))
