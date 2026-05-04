@@ -30,14 +30,18 @@ A private construction client in Sint Maarten employs people to manually record 
 
 
 ## Results & Limitations
-In February 2026, this workflow extracted data from 689 invoices. The workflow correctly extracted data from 664/689 invoices (96%). The rest (25/689) required manual corrections. From experience of having to manually record the receipt data, the time required to manually record the data from 700 receipts was greater than the cumulative time required to image the receipts, execute the workflow, and correct unclean data. It was estimated that it would previously take two to three days to fully record the data from 700 receipts manually. Using the workflow, the time required to record the data to the master database was reduced to an estimate of 6 to 7 hours.
+In February 2026, this workflow extracted data from 689 receipts. The workflow correctly extracted data from 664/689 receipts (96%). The rest (25/689) required manual corrections. From experience of having to manually record the receipt data, the time required to manually record the data from 700 receipts was greater than the cumulative time required to image the receipts, execute the workflow, and correct unclean data. It was estimated that it would previously take two to three days to fully record the data from 700 receipts manually. Using the workflow, the time required to record the data to the master database was reduced to an estimate of 6 to 7 hours.
 
 The workflow did not perfectly extract data from receipts of the following companies: Caribbean Concrete, Earth Building Supplies and Rental Services, Sint Maarten Building Supply / SBS Cole Bay. The errors likely arose from how the receipts were printed. The receipt details were sometimes not printed within the dedicated formatting boxes but instead on the box borders. This intersection of text and box borders likely rendered the receipt text hard for the LLM to register. In other cases, the ink on old receipts was vanishing.
 
 
 ## Recommendations
 
-The workflow strengths are that it works very well on receipts that are clearly legible. If receipts begin to be challenging for a human to read, they will likely be challenging for an LLM to register. Therefore, it is recommended to execute this workflow for all invoices and validate the results for receipts that are somewhat illegible, including those from Caribbean Concrete, Earth Building Supplies and Rental Services, and Sint Maarten Building Supply / SBS Cole Bay.
+The workflow strengths are that it works very well on receipts that are clearly legible and formatted well. If receipts begin to be challenging for a human to read, they will likely be challenging for an LLM to register. Therefore, it is recommended to execute this workflow for all clear receipts.
+
+For receipts that are hardly legible, the workflow won't register correct information, and all data entries would need correction. In this case, manually log these receipts.
+
+Finally, for receipts that are legible, but printed in a way that may challenge the LLM's registration, do execute the workflow. This is recommended because other details may be registered well, and it may be that only one field may need correction. Such receipts include those from Caribbean Concrete, Earth Building Supplies and Rental Services, and Sint Maarten Building Supply / SBS Cole Bay. From the experience of setting up 
 
 
 ## Next Steps:
