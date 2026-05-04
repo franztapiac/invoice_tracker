@@ -13,12 +13,12 @@ A private construction client in Sint Maarten employs people to manually record 
 1. Initiliased the directory structured according to `directives.md` by prompting the Large Language Model (LLM) Gemini 3.1 Pro (High) through the Google Antigravity coding agent.
 2. Prompted the LLM iteratively to build the desired workflow. The prompts used described the desired exports and functionality.
 3. Organised paper receipts by date (optional, but facilitates validation).
-4. Took pictures of the receipts with a smartphone. This manual process was streamlined by having a system for picture taking. For example, the system used had remaining receipts on the left side, the current receipt at the centre, and the photographed receipts on the right side of a desk.
+4. Took pictures of the receipts with a smartphone. This manual process was streamlined by having a system for picture taking. For example, the system used here had remaining receipts on the left side, the current receipt at the centre, and the photographed receipts on the right side of a desk.
 5. Placed the receipt images in the `receipt_imgs` directory, within a subdirectory for the batch (e.g., `receipt_imgs/batch01/`).
-6. Updated `batches.txt` to include the batch information (number of receipts being processed and execution date).
+6. Updated `batches.txt` to include the batch information (the number of receipts being processed and the execution date).
 7. Provided a Gemini API key through `GOOGLE_API_KEY` in `.env`.
-8. Prompted Gemini 3.1 Pro (High) through Google Antigravity to execute the workflow. Before this, the LLM was asked to familiarise itself with the directory, starting with `directives.md`.
-9. Validated the output in `exports/invoices_batch{ID}_{timestamp}.csv`. For data that was not extracted correctly, the original receipts were checked and the data was corrected manually. This step was streamlined by first asking the LLM to compare each row of extracted data with its corresponding image and generate data cleaning suggestions.
+8. Prompted the LLM to execute the workflow. If the workflow directory was opened at another time, the LLM was asked to first familiarise itself with the directory, starting with `directives.md`, before executing the workflow.
+9. Validated the output in `exports/receipts_batch{ID}_{timestamp}.csv`. For data that was not extracted correctly, the original receipts were checked and the data was corrected manually. This step was streamlined by first asking the LLM to compare each row of extracted data with its corresponding image and generate data cleaning suggestions.
 
 
 ### Skills
